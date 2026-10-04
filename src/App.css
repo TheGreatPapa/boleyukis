@@ -113,4 +113,14 @@ header p { margin: 0 0 20px; color: var(--muted); }
 .link.danger { color: var(--danger); font-size: 0.85rem; margin-top: 10px; }
 
 .stats { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; padding: 10px 12px; background: var(--accent-soft); border-radius: 8px; font-size: 0.9rem; }
+.caps { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.caps h3 { margin: 0 0 4px; font-size: 0.95rem; }
+.cap-row { display: grid; grid-template-columns: 1fr 110px auto; gap: 10px; align-items: end; margin: 10px 0; }
+.cap-row label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+.cap-row input {
+  font: inherit; font-size: 0.9rem; color: var(--text); padding: 7px 9px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--field-bg); width: 100%; min-width: 0;
+}
+.cap-row .btn { height: 36px; }
+.cap-warn { grid-column: 1 / -1; color: var(--danger); font-size: 0.8rem; }
 .pager { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }

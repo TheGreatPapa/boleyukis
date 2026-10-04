@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import TicketEditor from './components/TicketEditor';
 import PagePreview from './components/PagePreview';
-import { generateTickets, MAX_TICKETS } from './lib/sequence';
+import { generateTickets, sameValue, MAX_TICKETS } from './lib/sequence';
 import { PAPERS, computeLayout, getPageSize, widthForColumns } from './lib/layout';
 import { FONTS } from './lib/render';
 import { loadTemplateFromFile, makeSampleTemplate } from './lib/image';
@@ -19,6 +19,7 @@ const newSeq = (overrides = {}) => ({
   suffix: '',
   lowercase: false,
   source: null,
+  caps: [], // [{ when: 'B', count: '12' }] — quantity override keyed by the previous counter's value
   ...overrides,
 });
 const newField = (overrides = {}) => ({
@@ -80,6 +81,21 @@ export default function App() {
   const { tickets: texts, combos, counters, lists } = useMemo(() => generateTickets(fields), [fields]);
   const previewTexts = texts[0] ?? fields.map(() => '001');
   const ticketLabel = (t) => t.join(' / ');
+
+  // Special caps compare against the counter right before the selected one.
+  const counterIndex = counters.findIndex((f) => f.id === selected.id);
+  const prevCounter = counterIndex > 0 ? counters[counterIndex - 1] : null;
+  const prevValues = prevCounter ? lists[counterIndex - 1] : [];
+  const caps = seq.caps ?? [];
+  const setCap = (i, patch) => updateSeq({ caps: caps.map((c, j) => (j === i ? { ...c, ...patch } : c)) });
+  // One special cap per value of the previous position at most.
+  const canAddCap = caps.length < prevValues.length;
+  const addCap = () => {
+    if (!canAddCap) return;
+    const next = prevValues.find((v) => !caps.some((c) => sameValue(c.when, v))) ?? '';
+    updateSeq({ caps: [...caps, { when: next, count: seq.count }] });
+  };
+  const removeCap = (i) => updateSeq({ caps: caps.filter((_, j) => j !== i) });
 
   const aspect = template ? template.height / template.width : 0.375;
   const ticketW = Math.max(1, num(lay.ticketW, 90));
@@ -344,11 +360,57 @@ export default function App() {
                   <input value={seq.suffix} onChange={setSeqKey('suffix')} />
                 </label>
               </div>
+
+              {seq.type !== 'copy' && prevCounter && (
+                <div className="caps">
+                  <h3>Special caps</h3>
+                  <p className="hint">
+                    Use a different quantity for {positionName(selected.id)} when {positionName(prevCounter.id)} has
+                    a specific value. Quantity 0 skips that value.
+                  </p>
+                  {caps.map((c, i) => {
+                    const known = prevValues.some((v) => sameValue(c.when, v));
+                    return (
+                      <div className="cap-row" key={i}>
+                        <label>
+                          When {positionName(prevCounter.id)} is
+                          <input list="cap-values" value={c.when} placeholder="e.g. B"
+                            onChange={(e) => setCap(i, { when: e.target.value })} />
+                        </label>
+                        <label>
+                          Quantity
+                          <input type="number" min="0" max={MAX_TICKETS} value={c.count}
+                            onChange={(e) => setCap(i, { count: e.target.value })} />
+                        </label>
+                        <button className="btn small" onClick={() => removeCap(i)} aria-label="Remove special cap">×</button>
+                        {c.when && !known && (
+                          <span className="cap-warn">“{c.when}” isn't a value of {positionName(prevCounter.id)}.</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <datalist id="cap-values">
+                    {prevValues.slice(0, 500).map((v) => <option key={v} value={v} />)}
+                  </datalist>
+                  {canAddCap ? (
+                    <button className="link" onClick={addCap}>+ Add special cap</button>
+                  ) : (
+                    <p className="hint">
+                      All {prevValues.length} values of {positionName(prevCounter.id)} already have a special cap.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="stats">
                 <span>
-                  {counters.map((f, k) => `${positionName(f.id)} (${lists[k].length})`).join(' × ')}
-                  {counters.length > 1 && ` = ${combos}`}
-                  {' '}<b>{texts.length} tickets</b>
+                  {counters
+                    .map((f, k) => {
+                      const n = f.seq.caps?.length && k > 0 ? f.seq.caps.length : 0;
+                      return `${positionName(f.id)} (${lists[k].length}${n ? `, ${n} special` : ''})`;
+                    })
+                    .join(' × ')}
+                  {' → '}<b>{combos} tickets</b>
                 </span>
               </div>
               <p className="hint">
