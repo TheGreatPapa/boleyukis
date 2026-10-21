@@ -1,22 +1,26 @@
 export const MAX_TICKETS = 5000;
 
-// 1 -> A, 26 -> Z, 27 -> AA ...
-export function toLetters(n) {
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const ALPHABET_ENYE = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'; // Spanish: Ñ after N
+
+// 1 -> A, 26 -> Z, 27 -> AA ... (base = alphabet length)
+export function toLetters(n, alphabet = ALPHABET) {
+  const base = alphabet.length;
   let s = '';
   while (n > 0) {
-    const r = (n - 1) % 26;
-    s = String.fromCharCode(65 + r) + s;
-    n = Math.floor((n - 1) / 26);
+    const r = (n - 1) % base;
+    s = alphabet[r] + s;
+    n = Math.floor((n - 1) / base);
   }
   return s;
 }
 
-export function fromLetters(str) {
+export function fromLetters(str, alphabet = ALPHABET) {
   let n = 0;
   for (const c of String(str).trim().toUpperCase()) {
-    const v = c.charCodeAt(0) - 64;
-    if (v < 1 || v > 26) return NaN;
-    n = n * 26 + v;
+    const v = alphabet.indexOf(c) + 1;
+    if (v < 1) return NaN;
+    n = n * alphabet.length + v;
   }
   return n || NaN;
 }
@@ -95,18 +99,19 @@ export function generateSequence(seq) {
 }
 
 // The bare values (no prefix/suffix) of a sequence, optionally with another quantity.
-export function sequenceValues({ type, start, count, step, padding, lowercase }, quantity = count) {
+export function sequenceValues({ type, start, count, step, padding, lowercase, enye }, quantity = count) {
   const total = Math.max(0, Math.min(Math.floor(Number(quantity) || 0), MAX_TICKETS));
   const inc = Math.floor(Number(step)) || 1;
   const out = [];
 
   if (type === 'letters') {
     // Start accepts a letter ("C") or a position number ("3").
-    const base = fromLetters(start) || parseInt(start, 10) || 1;
+    const alphabet = enye ? ALPHABET_ENYE : ALPHABET;
+    const base = fromLetters(start, alphabet) || parseInt(start, 10) || 1;
     for (let i = 0; i < total; i++) {
       const n = base + i * inc;
       if (n < 1) break;
-      const s = toLetters(n);
+      const s = toLetters(n, alphabet);
       out.push(lowercase ? s.toLowerCase() : s);
     }
   } else {

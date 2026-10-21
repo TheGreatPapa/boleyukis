@@ -18,6 +18,7 @@ const newSeq = (overrides = {}) => ({
   prefix: '',
   suffix: '',
   lowercase: false,
+  enye: false, // letters: include Ñ after N
   source: null,
   caps: [], // [{ when: 'B', count: '12' }] — quantity override keyed by the previous counter's value
   ...overrides,
@@ -344,10 +345,16 @@ export default function App() {
                         <input type="number" min="0" max="12" value={seq.padding} onChange={setSeqKey('padding')} />
                       </label>
                     ) : (
-                      <label className="check">
-                        <input type="checkbox" checked={seq.lowercase} onChange={setSeqKey('lowercase')} />
-                        Lowercase
-                      </label>
+                      <>
+                        <label className="check">
+                          <input type="checkbox" checked={seq.lowercase} onChange={setSeqKey('lowercase')} />
+                          Lowercase
+                        </label>
+                        <label className="check">
+                          <input type="checkbox" checked={seq.enye} onChange={setSeqKey('enye')} />
+                          Include Ñ
+                        </label>
+                      </>
                     )}
                   </>
                 )}
